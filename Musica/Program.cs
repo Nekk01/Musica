@@ -1,10 +1,24 @@
 using Musica.Components;
+using Musica;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+var connectionString = builder.Configuration.GetConnectionString("SQLConnection");
+
+builder.Services.AddHttpContextAccessor();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddAuthentication("Cookie").AddCookie("Cookie", options =>
+{
+    options.LoginPath = "/Login";
+    options.AccessDeniedPath = "/Login";
+    options.LogoutPath = "/Logout";
+});
 
 var app = builder.Build();
 
@@ -16,10 +30,15 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseHttpsRedirection();
 
 
 app.UseAntiforgery();
+
+app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

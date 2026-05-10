@@ -1,8 +1,34 @@
 @page "/Login"
 @using Musica.Components.Layout
+@using System.Security.Claims
 @layout TestLayout
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
-<p>Авторизация</p>
-<input type="text" placeholder="Логин">
-<input type="text" placeholder="Пароль">
-<a href="" class="button">Войти</a>
+<EditForm method="post" Model="Model" FormName="registerForm" OnValidSubmit="AuthenticateUser">
+    <InputText type="text" placeholder="Почта" name="Model.Email" @bind-value="Model.Email"/>
+    <InputText type="password" placeholder="Пароль" name="Model.Password" @bind-value="Model.Password"/>
+    
+    <button type="submit" class="button">Войти</button>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    public LoginModel Model { get; set; } = new LoginModel();
+
+    private async Task AuthenticateUser()
+    {
+        if (HttpContext == null) return;
+
+        var principal = await AuthService.AuthenticateUser(Model.Email, Model.Password);
+
+        if (principal != null)
+        {
+            await HttpContext.SignInAsync("Cookie", principal);
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}

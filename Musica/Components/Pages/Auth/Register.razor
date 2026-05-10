@@ -1,5 +1,45 @@
 @page "/Register"
 @using Musica.Components.Layout
 @layout TestLayout
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
 <p>Регистрация</p>
+<EditForm method="post" Model="Model" FormName="registerForm" OnValidSubmit="RegisterUser">
+
+    <InputText type="text" placeholder="Почта" @bind-value="Model.Email"/>
+    <InputText type="password" placeholder="Пароль" @bind-value="Model.Password"/>
+    <InputText type="password" placeholder="Подтверждение пароля" @bind-value="Model.ConfirmPassword"/>
+    <InputText type="text" placeholder="Логин пользователя" @bind-value="Model.DisplayName"/>
+    
+    <button type="submit" class="button">Создать аккаунт</button>
+</EditForm>
+
+
+@code {
+    [SupplyParameterFromForm]
+    public RegistrationModel Model { get; set; } = new();
+    protected override void OnInitialized()
+    {
+        Model ??= new RegistrationModel();
+    }
+
+    public async Task RegisterUser()
+    {
+        if (Model.Password == Model.ConfirmPassword)
+        {
+            bool RegistrationResult = await AuthService.RegisterUser(Model.Email, Model.Password, Model.DisplayName);
+            
+            Console.WriteLine("clicked");
+
+            if (RegistrationResult)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Пароли не совпадают");
+        }
+    }
+}
