@@ -1,0 +1,77 @@
+.media-player {
+  position: fixed;
+  bottom: 25px;
+  left: 10%;
+  width: 80%;
+  background: rgba(23, 23, 23, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  padding: 10px 40px 10px;
+  box-sizing: border-box;
+}
+
+.progress-container {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.progress-slider {
+  width: 100%;
+  cursor: pointer;
+  accent-color: white;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.play-pause-btn {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-color);
+  color: #1a0633;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 20px rgba(212, 160, 58, 0.4);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.track-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 30%;
+}
+
+.extra-controls {
+  width: 30%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+}
