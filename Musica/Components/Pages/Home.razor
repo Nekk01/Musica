@@ -1,16 +1,17 @@
 ﻿@page "/Home"
+@inject ITrackService TrackService
 
 <PageTitle>Home</PageTitle>
 
 <section class="content-section">
     <h2>New Releases</h2>
     <div class="mini-card-container">
-        @for(int a = 0; a <=5; a++){
+        @foreach(var item in items){
             <div class="music-mini-card" onclick="openTrackView(this)">
-                <img src="Images/card.jpg" alt="Crawling" class="album-thumb-max">
+                <img src="@item.cover_url" alt="Crawling" class="album-thumb-max">
                 <div class="text-meta">
-                    <span class="track-title">Crawling</span>
-                    <span class="artist-name">White Bat</span>
+                    <span class="track-title">@item.title</span>
+                    <span class="artist-name">@item.artist_profile_id</span>
                 </div>
             </div>
         }
@@ -31,3 +32,12 @@
         }
     </div>
 </section>
+
+@code{
+    public List<TrackModel> items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await TrackService.GetAllRecords();
+    }
+}

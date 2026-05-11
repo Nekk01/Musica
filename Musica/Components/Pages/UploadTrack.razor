@@ -1,0 +1,148 @@
+@page "/upload"
+@rendermode InteractiveServer
+@inject ITrackService TrackService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Загрузка трека</PageTitle>
+
+<div class="form-container">
+    @if (isUploading)
+    {
+        <div class="alert alert-info">Идет загрузка, пожалуйста, подождите...</div>
+    }
+
+    @if (uploadSuccess)
+    {
+        <div class="alert alert-success">Трек успешно опубликован!</div>
+    }
+
+    <EditForm Model="track" OnValidSubmit="HandleSubmit" FormName="UploadTrack" class="form-wrapper">
+        <DataAnnotationsValidator />
+
+        <div class="section-card">
+            <h3>Выберите треки</h3>
+            <label class="text-muted small">Название трека</label>
+            <InputText @bind-Value="track.title" placeholder="Название..." class="w-100 mt-1" />
+            <ValidationMessage For="@(() => track.title)" />
+            
+            <!-- Инпут для Аудио -->
+            <InputFile OnChange="HandleAudioSelected" accept="audio/mp3, audio/wav, audio/flac" class="w-100 mt-3" />
+            <div class="text-muted small mt-2">Поддерживаемые форматы: MP3, WAV, FLAC</div>
+
+            <!-- Предпросмотр (динамический рендеринг через C#) -->
+            <div class="mt-3" id="filePreview">
+                <div class="file-preview-item">
+                    <div class="album-thumb" style="background: #333;">🎵</div>
+                    <div class="text-meta">
+                        @if (selectedAudioFile != null)
+                        {
+                            <span class="track-title">@selectedAudioFile.Name</span>
+                            <span class="artist-name">@((selectedAudioFile.Size / 1024.0 / 1024.0).ToString("F2")) MB</span>
+                        }
+                        else
+                        {
+                            <span class="track-title">Нет выбранных файлов</span>
+                            <span class="artist-name">Выберите треки выше</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3>🖼️ Обложка</h3>
+            <!-- Инпут для Обложки -->
+            <InputFile OnChange="HandleCoverSelected" accept="image/png, image/jpeg, image/webp" class="w-100" />
+            <div class="text-muted small mt-2">Будет использована как обложка для трека.</div>
+            
+            @if (selectedCoverFile != null)
+            {
+                <div class="text-success small mt-2">Выбрано: @selectedCoverFile.Name</div>
+            }
+        </div>
+
+        <div class="section-card" style="border-color: rgba(212, 160, 58, 0.2);">
+            <button type="submit" class="btn-submit" disabled="@isUploading">⬆ Опубликовать</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private TrackModel track = new TrackModel();
+    private IBrowserFile selectedAudioFile;
+    private IBrowserFile selectedCoverFile;
+    
+    private bool isUploading = false;
+    private bool uploadSuccess = false;
+
+    // Вызывается при выборе аудио
+    private void HandleAudioSelected(InputFileChangeEventArgs e)
+    {
+        selectedAudioFile = e.File;
+    }
+
+    // Вызывается при выборе обложки
+    private void HandleCoverSelected(InputFileChangeEventArgs e)
+    {
+        selectedCoverFile = e.File;
+    }
+
+    // Отправка формы
+    private async Task HandleSubmit()
+    {
+        Console.WriteLine("submited");
+
+        if (selectedAudioFile == null)
+        {
+            Console.WriteLine("Audio not selected");
+            
+            return;
+        }
+
+        isUploading = true;
+        uploadSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine("Receiving user ID" + userId);
+
+            bool result = await TrackService.UploadRecord(track, selectedAudioFile, selectedCoverFile, userId);
+
+            if (result)
+            {
+                uploadSuccess = true;
+                track = new TrackModel(); // Очищаем форму
+                selectedAudioFile = null;
+                selectedCoverFile = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Обработка ошибки
+            Console.WriteLine($"Ошибка загрузки: {ex.Message}");
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        int artistProfileID = await TrackService.FindArtistByUserID(Int32.Parse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value));
+        if(artistProfileID >= 1)
+        {
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/register/artist");
+        }
+    }
+}

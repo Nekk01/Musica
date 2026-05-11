@@ -24,5 +24,8 @@ function handleAction(action){
         case 'profile':
             window.location.href = '/profile';
             break;
+        case 'publish':
+            window.location.href = '/upload';
+            break;
     }
 }

@@ -1,4 +1,7 @@
 .user-profile{
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
   position: fixed;
   z-index: 100;
   right: 25px;

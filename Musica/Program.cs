@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Musica.Components;
 using Musica;
 
@@ -5,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITrackService, TrackService>();
 
 var connectionString = builder.Configuration.GetConnectionString("SQLConnection");
 
@@ -21,6 +23,13 @@ builder.Services.AddAuthentication("Cookie").AddCookie("Cookie", options =>
 });
 
 var app = builder.Build();
+
+app.MapPost("/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync();
+    
+    return Results.Redirect("/");
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
