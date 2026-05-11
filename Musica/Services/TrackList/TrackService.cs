@@ -25,7 +25,7 @@ public class TrackService : ITrackService
         {
             connection.Open();
 
-            string sql = "SELECT id, title, release_date, artist_profile_id, genre_id, file_url, cover_url FROM TRACK;";
+            string sql = "SELECT t.id, t.title, t.release_date, t.artist_profile_id, t.genre_id, t.file_url, t.cover_url,ap.stage_name FROM TRACK t LEFT JOIN ARTIST_PROFILE ap ON t.artist_profile_id = ap.id;";
             using var command = new SqlCommand(sql, (SqlConnection)connection);
             using var reader = await command.ExecuteReaderAsync();
             
@@ -39,7 +39,8 @@ public class TrackService : ITrackService
                     artist_profile_id = reader.GetInt32(3),
                     genre_id = reader.GetInt32(4),
                     file_url = reader.GetString(5),
-                    cover_url = reader.GetString(6)
+                    cover_url = reader.GetString(6),
+                    artist_name = reader.GetString(7)
                 });
             }
         }
@@ -92,8 +93,8 @@ public class TrackService : ITrackService
             connection.Open();
 
             string sql = @"
-                INSERT INTO TRACK (title, file_url, cover_url, artist_profile_id, genre_id, is_published, is_deleted) 
-                VALUES (@title, @file_url, @cover_url, @artist_profile_id, @genre_id, 1, 0);";
+                INSERT INTO TRACK (title, file_url, cover_url, artist_profile_id, genre_id) 
+                VALUES (@title, @file_url, @cover_url, @artist_profile_id, @genre_id);";
 
             using var command = new SqlCommand(sql, (SqlConnection)connection);
             

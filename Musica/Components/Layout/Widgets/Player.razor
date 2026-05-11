@@ -1,36 +1,341 @@
+<!-- Аудио элемент -->
+<audio id="audio-element" preload="auto"></audio>
+
 <footer class="media-player">
     <div class="progress-container">
-        <input type="range" class="progress-slider" min="0" max="100" value="45">
+        <input type="range" class="progress-slider" id="progress-slider" min="0" max="100" value="0">
     </div>
 
     <div class="controls-row">
         <div class="track-info">
-            <img src="Images/card.jpg" alt="Album Art" class="album-thumb">
+            <img src="Images/default-cover.jpg" alt="Album Art" class="album-thumb" id="album-art">
             <div class="text-meta">
-            <span class="track-title">trackTitle</span>
-            <span class="artist-name">authorName</span>
+                <span class="track-title" id="track-title">Выберите трек</span>
+                <span class="artist-name" id="artist-name">Исполнитель</span>
+            </div>
+        </div>
+
+        <div class="playback-controls">
+            <button class="icon-btn" id="prev-btn">⏮</button>
+            <button class="play-pause-btn" id="play-pause-btn">▶</button>
+            <button class="icon-btn" id="next-btn">⏭</button>
+        </div>
+
+        <div class="extra-controls">
+            <button class="icon-btn" id="settings-btn">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            <button class="icon-btn" id="playlist-btn">
+                <span class="material-symbols-outlined">playlist_add</span>
+            </button>
+            <button class="icon-btn" id="volume-btn">
+                <span class="material-symbols-outlined">volume_down</span>
+            </button>
+            <button class="icon-btn" id="favorite-btn">
+                <span class="material-symbols-outlined">favorite</span>
+            </button>
         </div>
     </div>
-
-    <div class="playback-controls">
-        <button class="icon-btn">⏮</button>
-        <button class="play-pause-btn">II</button>
-        <button class="icon-btn">⏭</button>
-    </div>
-
-    <div class="extra-controls">
-        <button class="icon-btn">
-        <span class="material-symbols-outlined">settings</span>
-        </button>
-        <button class="icon-btn">
-        <span class="material-symbols-outlined">playlist_add</span>
-        </button>
-        <button class="icon-btn">
-        <span class="material-symbols-outlined">volume_down</span>
-        </button>
-        <button class="icon-btn">
-        <span class="material-symbols-outlined">favorite</span>
-        </button>
-    </div>
-    </div>
 </footer>
+
+<script>
+    class MediaPlayer {
+        constructor() {
+            this.audio = document.getElementById('audio-element');
+            this.progressSlider = document.getElementById('progress-slider');
+            this.playPauseBtn = document.getElementById('play-pause-btn');
+            this.prevBtn = document.getElementById('prev-btn');
+            this.nextBtn = document.getElementById('next-btn');
+            this.volumeBtn = document.getElementById('volume-btn');
+            this.trackTitleEl = document.getElementById('track-title');
+            this.artistNameEl = document.getElementById('artist-name');
+            this.albumArtEl = document.getElementById('album-art');
+
+            this.isPlaying = false;
+            this.currentVolume = 1;
+            this.isDragging = false;
+            this.playlist = [];
+            this.currentTrackIndex = -1;
+
+            this.initEventListeners();
+            this.collectTracksFromCards();
+        }
+
+        collectTracksFromCards() {
+            this.playlist = [];
+            const cards = document.querySelectorAll('.music-mini-card');
+            
+            cards.forEach((card, index) => {
+                const track = {
+                    id: index,
+                    title: card.getAttribute('data-title'),
+                    artist: card.getAttribute('data-artist'),
+                    coverUrl: card.getAttribute('data-cover'),
+                    fileUrl: card.getAttribute('data-file-url'),
+                    element: card
+                };
+                this.playlist.push(track);
+            });
+        }
+
+        initEventListeners() {
+            this.playPauseBtn.addEventListener('click', () => this.togglePlay());
+            
+            this.prevBtn.addEventListener('click', () => this.prevTrack());
+            this.nextBtn.addEventListener('click', () => this.nextTrack());
+
+            this.progressSlider.addEventListener('input', () => this.onProgressInput());
+            this.progressSlider.addEventListener('change', () => this.onProgressChange());
+
+            this.audio.addEventListener('timeupdate', () => this.updateProgress());
+            this.audio.addEventListener('loadedmetadata', () => this.onMetadataLoaded());
+            this.audio.addEventListener('ended', () => this.nextTrack());
+            this.audio.addEventListener('play', () => this.onPlay());
+            this.audio.addEventListener('pause', () => this.onPause());
+            this.audio.addEventListener('error', (e) => this.onAudioError(e));
+
+            this.volumeBtn.addEventListener('click', () => this.toggleMute());
+
+            document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.music-mini-card');
+                if (card) {
+                    this.handleCardClick(card);
+                }
+            });
+        }
+
+        handleCardClick(card) {
+            const fileUrl = card.getAttribute('data-file-url');
+            const title = card.getAttribute('data-title');
+            
+            // Ищем трек в плейлисте
+            const trackIndex = this.playlist.findIndex(track => track.fileUrl === fileUrl);
+            
+            if (trackIndex !== -1) {
+                // Убираем активный класс со всех карточек
+                document.querySelectorAll('.music-mini-card').forEach(c => {
+                    c.classList.remove('playing-now');
+                });
+                
+                // Добавляем активный класс на текущую карточку
+                card.classList.add('playing-now');
+                
+                // Загружаем и воспроизводим трек
+                this.loadAndPlayTrack(trackIndex);
+                
+                // Вызываем оригинальную функцию если нужно
+                if (typeof openTrackView === 'function') {
+                    openTrackView(card);
+                }
+            }
+        }
+
+        loadAndPlayTrack(index) {
+            if (index >= 0 && index < this.playlist.length) {
+                this.currentTrackIndex = index;
+                const track = this.playlist[index];
+                
+                // Обновление UI плеера
+                this.trackTitleEl.textContent = track.title;
+                this.artistNameEl.textContent = track.artist;
+                this.albumArtEl.src = track.coverUrl || 'Images/default-cover.jpg';
+                
+                // Загрузка аудио
+                this.audio.src = track.fileUrl;
+                this.audio.load();
+                
+                // Сброс прогресса
+                this.progressSlider.value = 0;
+                
+                // Воспроизведение
+                this.audio.play()
+                    .then(() => {
+                        this.onPlay();
+                    })
+                    .catch(err => {
+                        console.error('Ошибка воспроизведения:', err);
+                        this.onPause();
+                    });
+                
+                this.updateCardsState();
+            }
+        }
+
+        updateCardsState() {
+            document.querySelectorAll('.music-mini-card').forEach(card => {
+                const cardUrl = card.getAttribute('data-file-url');
+                const currentTrack = this.playlist[this.currentTrackIndex];
+                
+                if (currentTrack && cardUrl === currentTrack.fileUrl) {
+                    card.classList.add('playing-now');
+                } else {
+                    card.classList.remove('playing-now');
+                }
+            });
+        }
+
+        togglePlay() {
+            if (this.currentTrackIndex === -1) {
+                // Если трек не выбран, пробуем воспроизвести первый
+                if (this.playlist.length > 0) {
+                    document.querySelector('.music-mini-card')?.click();
+                }
+                return;
+            }
+            
+            if (this.isPlaying) {
+                this.audio.pause();
+            } else {
+                this.audio.play().catch(err => {
+                    console.error('Ошибка воспроизведения:', err);
+                });
+            }
+        }
+
+        onPlay() {
+            this.isPlaying = true;
+            this.playPauseBtn.textContent = '⏸';
+            this.updateCardsState();
+        }
+
+        onPause() {
+            this.isPlaying = false;
+            this.playPauseBtn.textContent = '▶';
+            this.updateCardsState();
+        }
+
+        nextTrack() {
+            if (this.playlist.length === 0) return;
+            
+            const nextIndex = (this.currentTrackIndex + 1) % this.playlist.length;
+            this.loadAndPlayTrack(nextIndex);
+            this.scrollToActiveCard();
+        }
+
+        prevTrack() {
+            if (this.playlist.length === 0) return;
+            
+            const prevIndex = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
+            this.loadAndPlayTrack(prevIndex);
+            this.scrollToActiveCard();
+        }
+
+        scrollToActiveCard() {
+            const activeCard = document.querySelector('.music-mini-card.playing-now');
+            if (activeCard) {
+                activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        updateProgress() {
+            if (!this.isDragging && this.audio.duration) {
+                const progress = (this.audio.currentTime / this.audio.duration) * 100;
+                this.progressSlider.value = progress;
+            }
+        }
+
+        onMetadataLoaded() {
+            this.progressSlider.max = 100;
+        }
+
+        onProgressInput() {
+            this.isDragging = true;
+        }
+
+        onProgressChange() {
+            this.isDragging = false;
+            const progress = this.progressSlider.value;
+            const time = (progress / 100) * this.audio.duration;
+            this.audio.currentTime = time;
+        }
+
+        onAudioError(e) {
+            console.error('Ошибка загрузки аудио:', e);
+            this.onPause();
+            alert('Не удалось загрузить аудиофайл');
+        }
+
+        toggleMute() {
+            if (this.currentVolume > 0) {
+                this.lastVolume = this.currentVolume;
+                this.currentVolume = 0;
+                this.volumeBtn.querySelector('.material-symbols-outlined').textContent = 'volume_off';
+            } else {
+                this.currentVolume = this.lastVolume || 1;
+                this.volumeBtn.querySelector('.material-symbols-outlined').textContent = 
+                    this.currentVolume > 0.5 ? 'volume_up' : 'volume_down';
+            }
+            this.audio.volume = this.currentVolume;
+        }
+
+        changeVolume(delta) {
+            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume + delta));
+            this.audio.volume = this.currentVolume;
+            
+            const volumeIcon = this.volumeBtn.querySelector('.material-symbols-outlined');
+            if (this.currentVolume === 0) {
+                volumeIcon.textContent = 'volume_off';
+            } else if (this.currentVolume < 0.5) {
+                volumeIcon.textContent = 'volume_down';
+            } else {
+                volumeIcon.textContent = 'volume_up';
+            }
+        }
+
+        handleKeyboard(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    this.togglePlay();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    if (e.ctrlKey) {
+                        this.prevTrack();
+                    } else {
+                        this.seekTime(-5);
+                    }
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    if (e.ctrlKey) {
+                        this.nextTrack();
+                    } else {
+                        this.seekTime(5);
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.changeVolume(0.1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.changeVolume(-0.1);
+                    break;
+                case 'KeyM':
+                    this.toggleMute();
+                    break;
+            }
+        }
+
+        seekTime(seconds) {
+            if (this.audio.duration) {
+                this.audio.currentTime = Math.max(0, Math.min(
+                    this.audio.duration, 
+                    this.audio.currentTime + seconds
+                ));
+            }
+        }
+    }
+
+    function openTrackView(card) {
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        window.mediaPlayer = new MediaPlayer();
+    });
+</script>

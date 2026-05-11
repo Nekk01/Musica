@@ -111,7 +111,7 @@ public class AuthService : IAuthService
             }
 
 
-            using (SqlCommand cmd = new SqlCommand("INSERT INTO ARTIST_PROFILE (user_id) VALUES (@id)", (SqlConnection)connection))
+            using (SqlCommand cmd = new SqlCommand("INSERT INTO ARTIST_PROFILE (user_id, stage_name) SELECT @id, display_name FROM PROFILE WHERE user_id = @id;", (SqlConnection)connection))
             {
                 cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
                 
