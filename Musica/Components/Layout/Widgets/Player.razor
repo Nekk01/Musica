@@ -109,23 +109,18 @@
         handleCardClick(card) {
             const fileUrl = card.getAttribute('data-file-url');
             const title = card.getAttribute('data-title');
-            
-            // Ищем трек в плейлисте
+
             const trackIndex = this.playlist.findIndex(track => track.fileUrl === fileUrl);
             
             if (trackIndex !== -1) {
-                // Убираем активный класс со всех карточек
                 document.querySelectorAll('.music-mini-card').forEach(c => {
                     c.classList.remove('playing-now');
                 });
                 
-                // Добавляем активный класс на текущую карточку
                 card.classList.add('playing-now');
-                
-                // Загружаем и воспроизводим трек
+
                 this.loadAndPlayTrack(trackIndex);
-                
-                // Вызываем оригинальную функцию если нужно
+
                 if (typeof openTrackView === 'function') {
                     openTrackView(card);
                 }
@@ -136,20 +131,16 @@
             if (index >= 0 && index < this.playlist.length) {
                 this.currentTrackIndex = index;
                 const track = this.playlist[index];
-                
-                // Обновление UI плеера
+
                 this.trackTitleEl.textContent = track.title;
                 this.artistNameEl.textContent = track.artist;
                 this.albumArtEl.src = track.coverUrl || 'Images/default-cover.jpg';
-                
-                // Загрузка аудио
+
                 this.audio.src = track.fileUrl;
                 this.audio.load();
-                
-                // Сброс прогресса
+
                 this.progressSlider.value = 0;
-                
-                // Воспроизведение
+
                 this.audio.play()
                     .then(() => {
                         this.onPlay();
