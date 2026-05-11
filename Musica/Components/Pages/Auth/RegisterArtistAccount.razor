@@ -1,0 +1,35 @@
+@page "/Register/Artist"
+@rendermode InteractiveServer
+@using Musica.Components.Layout
+@layout TestLayout
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="form-container">
+    <h1>Регистрация аккаунта артиста</h1>
+    <h2>Вы сможете:</h2>
+    <ul>
+        <li>Публиковать собственные треки</li>
+        <li>Просматривать статистику по трекам (В РАЗРАБОТКЕ)</li>
+    </ul>
+    <button class="button" @onclick="RegisterArtist">Стать артистом</button>
+</div>
+
+@code {
+    public async Task RegisterArtist(){
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        bool result = await AuthService.RegisterArtist(Int32.Parse(userId));
+        if(result == true)
+        {
+            NavigationManager.NavigateTo("/upload");
+        }
+        else
+        {
+
+        }
+    }
+}

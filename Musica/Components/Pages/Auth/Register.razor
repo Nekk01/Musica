@@ -4,16 +4,50 @@
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 
-<p>Регистрация</p>
-<EditForm method="post" Model="Model" FormName="registerForm" OnValidSubmit="RegisterUser">
-
-    <InputText type="text" placeholder="Почта" @bind-value="Model.Email"/>
-    <InputText type="password" placeholder="Пароль" @bind-value="Model.Password"/>
-    <InputText type="password" placeholder="Подтверждение пароля" @bind-value="Model.ConfirmPassword"/>
-    <InputText type="text" placeholder="Логин пользователя" @bind-value="Model.DisplayName"/>
-    
-    <button type="submit" class="button">Создать аккаунт</button>
-</EditForm>
+<div class="center">
+    <div class="form-container">
+        <h1>Авторизация</h1>
+        <EditForm method="post" Model="Model" FormName="registerForm" OnValidSubmit="RegisterUser">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <InputText class="form-input" type="text" placeholder="Почта" @bind-value="Model.Email"/>            
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <InputText class="form-input" type="password" placeholder="Пароль" @bind-value="Model.Password"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <InputText class="form-input" type="password" placeholder="Подтверждение пароля" @bind-value="Model.ConfirmPassword"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <InputText class="form-input" type="text" placeholder="Логин пользователя" @bind-value="Model.DisplayName"/>
+                </div>
+            </div>
+            <button type="submit" class="button">Создать аккаунт</button>
+        </EditForm>
+    </div>
+</div>
 
 
 @code {

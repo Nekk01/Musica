@@ -91,4 +91,34 @@ public class AuthService : IAuthService
             return true;
         }
     }
+
+    public async Task<bool> RegisterArtist(int id)
+    {
+        using(IDbConnection connection = Connection)
+        {
+            connection.Open();
+
+            using (SqlCommand cmd = new SqlCommand("SELECT user_id FROM ARTIST_PROFILE WHERE user_id = @id", (SqlConnection)connection))
+            {
+                cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
+
+                object? checkIfExistMatch = await cmd.ExecuteScalarAsync();
+
+                if (checkIfExistMatch != null)
+                {
+                    return false;
+                }
+            }
+
+
+            using (SqlCommand cmd = new SqlCommand("INSERT INTO ARTIST_PROFILE (user_id) VALUES (@id)", (SqlConnection)connection))
+            {
+                cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
+                
+                await cmd.ExecuteScalarAsync();
+
+                return true;
+            }
+        }
+    }
 }
