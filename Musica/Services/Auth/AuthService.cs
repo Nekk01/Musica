@@ -80,7 +80,7 @@ public class AuthService : IAuthService
 
 
 
-            string sql = "INSERT INTO PROFILE (email, password, display_name) VALUES (@Email, @Password, @Name)";
+            string sql = "INSERT INTO PROFILE (email, password, display_name, role_id) VALUES (@Email, @Password, @Name, 1)";
             using var command = new SqlCommand(sql, (SqlConnection)connection);
             
             command.Parameters.Add(new SqlParameter("@Email", SqlDbType.NVarChar, 50) { Value = email });

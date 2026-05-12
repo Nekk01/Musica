@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITrackService, TrackService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 
 var connectionString = builder.Configuration.GetConnectionString("SQLConnection");
 

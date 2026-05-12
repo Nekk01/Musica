@@ -20,9 +20,13 @@ document.addEventListener('click', function(e) {
 });
 
 function handleAction(action){
+    const button = event.currentTarget;
+    const userId = button.getAttribute('user-id');
+
     switch(action){
         case 'profile':
-            window.location.href = '/profile';
+
+            window.location.href = '/profile/' + userId;
             break;
         case 'publish':
             window.location.href = '/upload';

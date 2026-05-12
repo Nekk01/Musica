@@ -1,19 +1,22 @@
-@page "/Profile"
+@page "/Profile/{id:int?}"
+@using Microsoft.AspNetCore.Mvc.RazorPages
+@inject IProfileService ProfileService
 
 <PageTitle>Profile</PageTitle>
 
 <div class="profile-header">
     <div class="profile-details">
-        <img src="images/Avatar.jpg" alt="Алиса Волкова" class="profile-avatar-large">
-        <h1>OG.Kseu</h1>
+        <img src="@user.avatar_url" alt="Алиса Волкова" class="profile-avatar-large">
+        <h1>@user.display_name</h1>
 
-        <div class="handle">ProfileTag</div>
-        <div class="stats">
+        <p>@user.bio</p>
+
+        @* <div class="stats">
             <div class="stat-item"><span>284</span><span class="stat-label"> Плейлиста</span></div>
             <div class="stat-item"><span>1.2k</span><span class="stat-label"> Подписчики</span></div>
             <div class="stat-item"><span>89</span><span class="stat-label"> Подписки</span></div>
-        </div>
-        </div>
+        </div> *@
+    </div>
 </div>
 
 <h2>История</h2>
@@ -44,3 +47,13 @@
         <span class="artist-name">Nova</span>
     </div>
 </div>
+
+@code{
+    [Parameter]
+    public int id{ get; set;}
+    UserModel user { get; set;} = new();
+    protected override async Task OnInitializedAsync()
+    {
+        user = await ProfileService.FindByID(id);
+    }
+}

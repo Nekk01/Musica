@@ -1,17 +1,29 @@
 ﻿@page "/Playlists"
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IPlaylistService PlaylistService
 
 <PageTitle>Playlists</PageTitle>
 
 <section class="content-section">
     <h2>My playlists</h2>
     <div class="mini-card-container">
+        @foreach(var item in ListOfPlaylists){
+            <div class="music-mini-card">
+                <img src="Images/Playlist.png" alt="Crawling" class="album-thumb-max">
+                <div class="text-meta">
+                    <span class="track-title">@item.name</span>
+                </div>
+            </div>
+        }
+
         <div class="music-mini-card">
             <img src="Images/favorite_256dp_E3E3E3_FILL1_wght400_GRAD0_opsz48.png" alt="Crawling" class="album-thumb-max">
             <div class="text-meta">
                 <span class="track-title">favorites</span>
             </div>
         </div>
-        <div class="music-mini-card">
+        <div class="music-mini-card" @onclick="ShowDialog">
             <img src="Images/library_add_256dp_E3E3E3_FILL1_wght400_GRAD0_opsz48.png" class="album-thumb-max">
             <div class="text-meta">
                 <span class="track-title">Create playlists</span>
@@ -19,3 +31,98 @@
         </div>
     </div>
 </section>
+
+@if (isDialogVisible)
+{
+    <div class="dialog-overlay" @onclick="HideDialog">
+        <div class="dialog-box" @onclick:stopPropagation="true">
+            <h3>Create new playlist</h3>
+            <div class="dialog-content">
+                <input 
+                    type="text" 
+                    class="dialog-input" 
+                    placeholder="Enter playlist name"
+                    @bind="playlistName"
+                    @onkeypress="HandleKeyPress" />
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-primary" @onclick="CreatePlaylistHandler" disabled="@isCreating">
+                    @(isCreating ? "Creating..." : "Create")
+                </button>
+                <button class="btn btn-secondary" @onclick="HideDialog" disabled="@isCreating">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isDialogVisible = false;
+    private string playlistName = string.Empty;
+    private bool isCreating = false;
+
+    private void ShowDialog()
+    {
+        playlistName = string.Empty;
+        isDialogVisible = true;
+    }
+
+    private void HideDialog()
+    {
+        isDialogVisible = false;
+        playlistName = string.Empty;
+    }
+
+    private async void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(playlistName) && !isCreating)
+        {
+            await CreatePlaylistHandler();
+        }
+    }
+
+    private async Task CreatePlaylistHandler()
+    {
+        Console.WriteLine("Создание...");
+
+        if (string.IsNullOrWhiteSpace(playlistName) || isCreating){
+            Console.WriteLine("Пустое поле");
+            return;
+        }
+
+        isCreating = true;
+        try
+        {
+            bool success = await PlaylistService.CreatePlaylist(playlistName, 1);
+
+            if (success)
+            {
+                HideDialog();
+                await GetListOfPlaylists();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating playlist: {ex.Message}");
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+    
+    private List<PlaylistModel> ListOfPlaylists { get; set;} = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await GetListOfPlaylists();
+    }
+
+    private async Task GetListOfPlaylists(){
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        ListOfPlaylists = await PlaylistService.GetAllRecords(Convert.ToInt32(userId));
+    }
+}

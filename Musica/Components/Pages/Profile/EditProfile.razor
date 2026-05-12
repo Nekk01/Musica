@@ -1,0 +1,136 @@
+@page "/Profile/Edit"
+@using Musica.Components.Layout
+@using System.Security.Claims
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthStateProvider
+@layout TestLayout
+@inject IProfileService ProfileService
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="center">
+    <div class="form-container">
+        <h3>Редактирование профиля</h3>
+        
+        @if (IsLoading)
+        {
+            <p>Загрузка...</p>
+        }
+        else if (ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ErrorMessage</div>
+        }
+        else if (SuccessMessage != null)
+        {
+            <div class="alert alert-success">@SuccessMessage</div>
+        }
+        else if (ProfileModel != null)
+        {
+            <EditForm Model="ProfileModel" FormName="updateProfileForm" OnValidSubmit="UpdateProfile">
+                <DataAnnotationsValidator />
+                
+                <div class="form-group">
+                    <label>Отображаемое имя</label>
+                    <div class="input-wrapper">
+                        <InputText class="form-input" @bind-Value="ProfileModel.display_name" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>О себе</label>
+                    <div class="input-wrapper">
+                        <InputTextArea class="form-input" @bind-Value="ProfileModel.bio" rows="4" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>URL аватара</label>
+                    <div class="input-wrapper">
+                        <InputText class="form-input" @bind-Value="ProfileModel.avatar_url" />
+                    </div>
+                </div>
+
+                <button type="submit" class="button" disabled="@IsSaving">
+                    @(IsSaving ? "Сохранение..." : "Сохранить")
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private UserModel? ProfileModel;
+    private bool IsLoading = true;
+    private bool IsSaving = false;
+    private string? ErrorMessage;
+    private string? SuccessMessage;
+    private int? _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                ErrorMessage = "Пользователь не авторизован";
+                return;
+            }
+            
+            _currentUserId = userId;
+
+            ProfileModel = await ProfileService.FindByID(userId);
+            
+            if (ProfileModel == null)
+            {
+                ErrorMessage = "Профиль не найден";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка загрузки профиля: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task UpdateProfile()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (ProfileModel == null || _currentUserId == null) return;
+        
+        IsSaving = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        
+        try
+        {
+            var success = await ProfileService.UpdateProfile(_currentUserId.Value, ProfileModel);
+            
+            if (success)
+            {
+                NavigationManager.NavigateTo($"/Profile/{userIdClaim}", forceLoad: true);
+            }
+            else
+            {
+                ErrorMessage = "Не удалось обновить профиль";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при сохранении: {ex.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+}

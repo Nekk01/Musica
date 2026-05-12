@@ -1,43 +1,89 @@
 @using Microsoft.AspNetCore.Identity
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
+@inject IProfileService ProfileService
+@rendermode InteractiveServer
 <link rel="stylesheet" href="NavMenu.razor.css">
 
-@if(isAuthenticated){
+@if(isAuthenticated)
+{
     <div class="user-profile">
-        <img src="/Images/Avatar.jpg" class="avatar" id="profileIcon"  onclick="toggleMenu()">
+        <img src="@(userObj?.avatar_url)" class="avatar" id="profileIcon" @onclick="ToggleMenu">
     </div>
 
-    <div class="profile-menu-container" id="dropdownMenu">
-        <button class="section-button" onclick="handleAction('profile')">Profile</button>
-        <button class="section-button">Account settings</button>
-        <button class="section-button" onclick="handleAction('publish')">Publish track</button>
-        <form action="/logout" method="post" style="display:inline;">
-            <AntiforgeryToken />
-            <button type="submit" class="section-button">Logout</button>
-        </form>
-    </div>
+    @if (isMenuOpen)
+    {
+        <div class="profile-menu-container" id="dropdownMenu">
+            <button class="section-button" @onclick="@(() => HandleAction("profile"))">Profile</button>
+            
+            <button class="section-button" @onclick="@(() => HandleAction("publish"))">Publish track</button>
+            
+            <form action="/logout" method="post" style="display:inline;">
+                <AntiforgeryToken />
+                <button type="submit" class="section-button">Logout</button>
+            </form>
+        </div>
+    }
 }
-else{
+else
+{
     <div class="user-profile">
         <a href="/login" class="section-button">Войти</a>
         <a href="/register" class="section-button">Зарегистрироваться</a>
     </div>
 }
 
-
-<script src="ProfileMenu.js"></script>
-
 @code {
-    
-    public HttpContext HttpContext { get; set;}
     private bool isAuthenticated;
+    private int UserID { get; set; }
+    private UserModel? userObj { get; set; }
+    
+    // Переменная для управления состоянием меню
+    private bool isMenuOpen = false;
+
+    // Метод для переключения меню
+    private void ToggleMenu()
+    {
+        isMenuOpen = !isMenuOpen;
+    }
+
+    // Обработчик действий
+    private void HandleAction(string action)
+    {
+        Console.WriteLine("clicked");
+        isMenuOpen = false; // Закрываем меню после клика
+        
+        if (action == "profile")
+        {
+            Navigation.NavigateTo($"/profile/{UserID}");
+        }
+        else if (action == "publish")
+        {
+            Navigation.NavigateTo("/upload");
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-
+        
         isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+        
+        if (isAuthenticated)
+        {
+            var Id = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (!string.IsNullOrEmpty(Id) && int.TryParse(Id, out int userId))
+            {
+                UserID = userId;
+                userObj = await ProfileService.FindByID(UserID);
+            }
+        }
+
+        if (userObj == null)
+        {
+            userObj = new UserModel();
+        }
     }
 }

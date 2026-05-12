@@ -17,7 +17,7 @@
 
 .profile-menu-container {
   z-index: 100;
-  display: none;
+  /* display: none; */
   position: fixed;
   width: 250px;
   border-radius: 20px;

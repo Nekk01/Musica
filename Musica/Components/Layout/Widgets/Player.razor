@@ -38,6 +38,20 @@
     </div>
 </footer>
 
+<div class="playlist-widget" id="playlist-widget">
+    <div class="playlist-widget-content">
+        <div class="widget-header">
+            <h3>Добавить в плейлист</h3>
+            <button class="close-widget" onclick="closePlaylistWidget()">✕</button>
+        </div>
+        <div class="widget-body" id="playlist-list-container">
+            <p class="loading-text">Загрузка...</p>
+        </div>
+    </div>
+</div>
+
+
+
 <script>
     class MediaPlayer {
         constructor() {

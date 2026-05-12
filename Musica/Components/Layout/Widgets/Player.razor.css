@@ -75,3 +75,79 @@
 .icon-btn:hover {
   opacity: 1;
 }
+
+
+
+.playlist-widget {
+    display: none;
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 320px;
+    max-height: 400px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    z-index: 1100;
+    overflow: hidden;
+}
+
+.playlist-widget.show {
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #333;
+    color: #fff;
+}
+
+.close-widget {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.widget-body {
+    overflow-y: auto;
+    padding: 8px;
+    color: #ccc;
+}
+
+.playlist-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.playlist-option:hover {
+    background: #2a2a2a;
+}
+
+.add-track-btn {
+    background: #333;
+    border: none;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.add-track-btn:hover {
+    background: #4a9eff;
+}
+
+.loading-text {
+    color: #666;
+    text-align: center;
+}
