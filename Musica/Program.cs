@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Musica.Components;
 using Musica;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Services
@@ -9,6 +10,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITrackService, TrackService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IPlaylistService, PlaylistService>();
+builder.Services.AddScoped<SyncSelectedTrackService>();
 
 var connectionString = builder.Configuration.GetConnectionString("SQLConnection");
 

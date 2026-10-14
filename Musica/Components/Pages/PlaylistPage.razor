@@ -1,0 +1,36 @@
+@page "/playlist/{id:int?}"
+@rendermode InteractiveServer
+@inject ITrackService TrackService
+@inject IPlaylistService PlaylistService
+
+<PageTitle>Home</PageTitle>
+
+<section class="content-section">
+    <h2>New Releases</h2>
+    <div class="mini-card-container">
+        @foreach(var item in TrackList){
+            <div class="music-mini-card" 
+                 data-file-url="@item.file_url"
+                 data-title="@item.title"
+                 data-artist="@item.artist_name"
+                 data-cover="@item.cover_url"
+                 onclick="openTrackView(this)">
+                <img src="@item.cover_url" alt="@item.title" class="album-thumb-max">
+                <div class="text-meta">
+                    <span class="track-title">@item.title</span>
+                    <span class="artist-name">@item.artist_name</span>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@code{
+    [Parameter]
+    public int id{ get; set;}
+    List<TrackModel> TrackList { get; set;} = new();
+    protected override async Task OnInitializedAsync()
+    {
+        TrackList = await PlaylistService.GetAllTracksFromPlaylist(id);
+    }
+}

@@ -24,6 +24,7 @@ public class AuthService : IAuthService
             return new SqlConnection(_configuration.GetConnectionString("SQLConnection"));
         }
     }
+
     public async Task<ClaimsPrincipal> AuthenticateUser(string email, string password)
     {
         using(IDbConnection connection = Connection)

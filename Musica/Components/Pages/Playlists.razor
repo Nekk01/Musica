@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IPlaylistService PlaylistService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Playlists</PageTitle>
 
@@ -9,12 +10,14 @@
     <h2>My playlists</h2>
     <div class="mini-card-container">
         @foreach(var item in ListOfPlaylists){
-            <div class="music-mini-card">
-                <img src="Images/Playlist.png" alt="Crawling" class="album-thumb-max">
-                <div class="text-meta">
-                    <span class="track-title">@item.name</span>
+            <a href="/playlist/@item.id" class="music-mini-card-link">
+                <div class="music-mini-card">
+                    <img src="Images/Playlist.png" alt="Playlist cover" class="album-thumb-max">
+                    <div class="text-meta">
+                        <span class="track-title">@item.name</span>
+                    </div>
                 </div>
-            </div>
+            </a>
         }
 
         <div class="music-mini-card">

@@ -47,6 +47,7 @@ public class TrackService : ITrackService
 
         return Items;
     }
+
     public async Task<bool> UploadRecord(TrackModel model, IBrowserFile audioFile, IBrowserFile coverFile, string userId)
     {
         int artist_profile_id = await FindArtistByUserID(Int32.Parse(userId));
@@ -57,7 +58,6 @@ public class TrackService : ITrackService
             Directory.CreateDirectory(uploadsFolder);
         }
 
-        //Audio
         if (audioFile != null)
         {
             long maxAudioSize = 50 * 1024 * 1024;
@@ -72,7 +72,6 @@ public class TrackService : ITrackService
             model.file_url = "/uploads/" + audioFileName;
         }
 
-        //Cevor
         if (coverFile != null)
         {
             long maxImageSize = 5 * 1024 * 1024;
@@ -87,7 +86,6 @@ public class TrackService : ITrackService
             model.cover_url = "/uploads/" + coverFileName;
         }
 
-        //db
         using (IDbConnection connection = Connection)
         {
             connection.Open();
@@ -109,9 +107,9 @@ public class TrackService : ITrackService
 
         return true;
     }
+
     public async Task<int> FindArtistByUserID(int userId)
     {
-        //поиск id артиста
         using (IDbConnection connection = Connection)
         {
             connection.Open();

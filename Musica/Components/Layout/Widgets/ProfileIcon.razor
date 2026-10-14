@@ -18,6 +18,8 @@
             
             <button class="section-button" @onclick="@(() => HandleAction("publish"))">Publish track</button>
             
+            <button class="section-button" @onclick="@(() => HandleAction("edit"))">Edit profile</button>
+
             <form action="/logout" method="post" style="display:inline;">
                 <AntiforgeryToken />
                 <button type="submit" class="section-button">Logout</button>
@@ -38,20 +40,16 @@ else
     private int UserID { get; set; }
     private UserModel? userObj { get; set; }
     
-    // Переменная для управления состоянием меню
     private bool isMenuOpen = false;
-
-    // Метод для переключения меню
+    
     private void ToggleMenu()
     {
         isMenuOpen = !isMenuOpen;
     }
-
-    // Обработчик действий
     private void HandleAction(string action)
     {
         Console.WriteLine("clicked");
-        isMenuOpen = false; // Закрываем меню после клика
+        isMenuOpen = false;
         
         if (action == "profile")
         {
@@ -61,8 +59,11 @@ else
         {
             Navigation.NavigateTo("/upload");
         }
+        else if (action == "edit")
+        {
+            Navigation.NavigateTo("/profile/edit");
+        }
     }
-
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthProvider.GetAuthenticationStateAsync();

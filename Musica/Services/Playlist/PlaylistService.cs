@@ -19,6 +19,54 @@ public class PlaylistService : IPlaylistService
         }
     }
     
+    public async Task<List<TrackModel>> GetAllTracksFromPlaylist(int playlistID)
+    {
+        List<TrackModel> tracks = new List<TrackModel>();
+
+        using (IDbConnection connection = Connection)
+        {
+            connection.Open();
+
+            string sql = @"
+                SELECT 
+                    t.id,
+                    t.title,
+                    t.file_url,
+                    t.release_date,
+                    t.artist_profile_id,
+                    t.genre_id,
+                    t.cover_url,
+                    ap.stage_name as artist_name
+                FROM PLAYLIST_TRACK pt
+                INNER JOIN TRACK t ON pt.track_id = t.id
+                LEFT JOIN ARTIST_PROFILE ap ON t.artist_profile_id = ap.id
+                WHERE pt.playlist_id = @PlaylistId
+                ORDER BY pt.added_at DESC;";
+
+            using var command = new SqlCommand(sql, (SqlConnection)connection);
+            
+            command.Parameters.Add(new SqlParameter("@PlaylistId", SqlDbType.Int) { Value = playlistID });
+            
+            using var reader = await command.ExecuteReaderAsync();
+            
+            while (await reader.ReadAsync())
+            {
+                tracks.Add(new TrackModel
+                {
+                    ID = reader.GetInt32(reader.GetOrdinal("id")),
+                    title = reader.GetString(reader.GetOrdinal("title")),
+                    file_url = reader.IsDBNull(reader.GetOrdinal("file_url")) ? null : reader.GetString(reader.GetOrdinal("file_url")),
+                    release_dateP = reader.IsDBNull(reader.GetOrdinal("release_date")) ? DateTime.Now : reader.GetDateTime(reader.GetOrdinal("release_date")),
+                    artist_profile_id = reader.IsDBNull(reader.GetOrdinal("artist_profile_id")) ? 0 : reader.GetInt32(reader.GetOrdinal("artist_profile_id")),
+                    artist_name = reader.IsDBNull(reader.GetOrdinal("artist_name")) ? "Unknown Artist" : reader.GetString(reader.GetOrdinal("artist_name")),
+                    genre_id = reader.IsDBNull(reader.GetOrdinal("genre_id")) ? 0 : reader.GetInt32(reader.GetOrdinal("genre_id")),
+                    cover_url = reader.IsDBNull(reader.GetOrdinal("cover_url")) ? null : reader.GetString(reader.GetOrdinal("cover_url"))
+                });
+            }
+        }
+        return tracks;
+    }
+
     public async Task<List<PlaylistModel>> GetAllRecords(int user_id)
     {
         List<PlaylistModel> Items = new List<PlaylistModel>();
@@ -49,6 +97,7 @@ public class PlaylistService : IPlaylistService
         }
         return Items;
     }
+
     public async Task<bool> CreatePlaylist(string name, int owner_id)
     {
         using(IDbConnection connection = Connection)
@@ -70,6 +119,7 @@ public class PlaylistService : IPlaylistService
     {
         return false;
     }
+
     public async Task<bool> AddTrackToPlaylist(int playlistId, int trackId)
     {
         using (IDbConnection connection = Connection)
@@ -92,6 +142,7 @@ public class PlaylistService : IPlaylistService
             }
         }
     }
+
     public async Task<bool> RemoveTrackFromPlaylist(int playlistId, int trackId)
     {
         using (IDbConnection connection = Connection)

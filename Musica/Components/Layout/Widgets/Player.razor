@@ -1,23 +1,45 @@
-<!-- Аудио элемент -->
-<audio id="audio-element" preload="auto"></audio>
+@using System.Collections
+@using System.Timers
+@rendermode InteractiveServer
+@inject SyncSelectedTrackService SSTS
+@inject IJSRuntime JS
+
 
 <footer class="media-player">
+
     <div class="progress-container">
-        <input type="range" class="progress-slider" id="progress-slider" min="0" max="100" value="0">
+        <input type="range" class="progress-slider" id="progress-slider" @onchange="Rewind" min="0" max="1000" value="@currentTimeStamp">
     </div>
 
     <div class="controls-row">
-        <div class="track-info">
-            <img src="Images/default-cover.jpg" alt="Album Art" class="album-thumb" id="album-art">
-            <div class="text-meta">
-                <span class="track-title" id="track-title">Выберите трек</span>
-                <span class="artist-name" id="artist-name">Исполнитель</span>
+        @if (track != null)
+        {
+            <p>@currentTimeStamp</p>
+            <p>@trackLength</p>
+            <p>@calculatedRewind</p>
+            <audio @ref="audioElement" id="audioElement" preload="auto" src="@track.file_url"></audio>
+            <div class="track-info">
+                <img src="@track.cover_url" alt="Album Art" class="album-thumb" id="album-art">
+                <div class="text-meta">
+                    <span class="track-title" id="track-title">@track.title</span>
+                    <span class="artist-name" id="artist-name">@track.artist_name</span>
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="track-info">
+                <img src="/Images/default-cover.png" alt="Album Art" class="album-thumb" id="album-art">
+                <div class="text-meta">
+                    <span class="track-title" id="track-title">title</span>
+                    <span class="artist-name" id="artist-name">artist_name</span>
+                </div>
+            </div>
+        }
 
         <div class="playback-controls">
             <button class="icon-btn" id="prev-btn">⏮</button>
-            <button class="play-pause-btn" id="play-pause-btn">▶</button>
+            <button class="play-pause-btn" id="play-pause-btn" @onclick="PlayingStates">@playPauseLabel</button>
             <button class="icon-btn" id="next-btn">⏭</button>
         </div>
 
@@ -38,309 +60,145 @@
     </div>
 </footer>
 
-<div class="playlist-widget" id="playlist-widget">
-    <div class="playlist-widget-content">
-        <div class="widget-header">
-            <h3>Добавить в плейлист</h3>
-            <button class="close-widget" onclick="closePlaylistWidget()">✕</button>
-        </div>
-        <div class="widget-body" id="playlist-list-container">
-            <p class="loading-text">Загрузка...</p>
-        </div>
-    </div>
-</div>
-
-
-
 <script>
-    class MediaPlayer {
-        constructor() {
-            this.audio = document.getElementById('audio-element');
-            this.progressSlider = document.getElementById('progress-slider');
-            this.playPauseBtn = document.getElementById('play-pause-btn');
-            this.prevBtn = document.getElementById('prev-btn');
-            this.nextBtn = document.getElementById('next-btn');
-            this.volumeBtn = document.getElementById('volume-btn');
-            this.trackTitleEl = document.getElementById('track-title');
-            this.artistNameEl = document.getElementById('artist-name');
-            this.albumArtEl = document.getElementById('album-art');
+    window.audioPlayer = 
+    {
+        play: function (element)
+        {
+            element.play();
+        },
 
-            this.isPlaying = false;
-            this.currentVolume = 1;
-            this.isDragging = false;
-            this.playlist = [];
-            this.currentTrackIndex = -1;
+        pause: function (element)
+        {
+            element.pause();
+        },
 
-            this.initEventListeners();
-            this.collectTracksFromCards();
-        }
+        startover: function (element, time)
+        {
+            element.currentTime = time ;
+        },
 
-        collectTracksFromCards() {
-            this.playlist = [];
-            const cards = document.querySelectorAll('.music-mini-card');
-            
-            cards.forEach((card, index) => {
-                const track = {
-                    id: index,
-                    title: card.getAttribute('data-title'),
-                    artist: card.getAttribute('data-artist'),
-                    coverUrl: card.getAttribute('data-cover'),
-                    fileUrl: card.getAttribute('data-file-url'),
-                    element: card
-                };
-                this.playlist.push(track);
-            });
-        }
+        getlength: function (element)
+        {
+            console.log(element.duration)
+            return element.duration;
+        },
 
-        initEventListeners() {
-            this.playPauseBtn.addEventListener('click', () => this.togglePlay());
-            
-            this.prevBtn.addEventListener('click', () => this.prevTrack());
-            this.nextBtn.addEventListener('click', () => this.nextTrack());
-
-            this.progressSlider.addEventListener('input', () => this.onProgressInput());
-            this.progressSlider.addEventListener('change', () => this.onProgressChange());
-
-            this.audio.addEventListener('timeupdate', () => this.updateProgress());
-            this.audio.addEventListener('loadedmetadata', () => this.onMetadataLoaded());
-            this.audio.addEventListener('ended', () => this.nextTrack());
-            this.audio.addEventListener('play', () => this.onPlay());
-            this.audio.addEventListener('pause', () => this.onPause());
-            this.audio.addEventListener('error', (e) => this.onAudioError(e));
-
-            this.volumeBtn.addEventListener('click', () => this.toggleMute());
-
-            document.addEventListener('keydown', (e) => this.handleKeyboard(e));
-
-            document.addEventListener('click', (e) => {
-                const card = e.target.closest('.music-mini-card');
-                if (card) {
-                    this.handleCardClick(card);
-                }
-            });
-        }
-
-        handleCardClick(card) {
-            const fileUrl = card.getAttribute('data-file-url');
-            const title = card.getAttribute('data-title');
-
-            const trackIndex = this.playlist.findIndex(track => track.fileUrl === fileUrl);
-            
-            if (trackIndex !== -1) {
-                document.querySelectorAll('.music-mini-card').forEach(c => {
-                    c.classList.remove('playing-now');
-                });
-                
-                card.classList.add('playing-now');
-
-                this.loadAndPlayTrack(trackIndex);
-
-                if (typeof openTrackView === 'function') {
-                    openTrackView(card);
-                }
-            }
-        }
-
-        loadAndPlayTrack(index) {
-            if (index >= 0 && index < this.playlist.length) {
-                this.currentTrackIndex = index;
-                const track = this.playlist[index];
-
-                this.trackTitleEl.textContent = track.title;
-                this.artistNameEl.textContent = track.artist;
-                this.albumArtEl.src = track.coverUrl || 'Images/default-cover.jpg';
-
-                this.audio.src = track.fileUrl;
-                this.audio.load();
-
-                this.progressSlider.value = 0;
-
-                this.audio.play()
-                    .then(() => {
-                        this.onPlay();
-                    })
-                    .catch(err => {
-                        console.error('Ошибка воспроизведения:', err);
-                        this.onPause();
-                    });
-                
-                this.updateCardsState();
-            }
-        }
-
-        updateCardsState() {
-            document.querySelectorAll('.music-mini-card').forEach(card => {
-                const cardUrl = card.getAttribute('data-file-url');
-                const currentTrack = this.playlist[this.currentTrackIndex];
-                
-                if (currentTrack && cardUrl === currentTrack.fileUrl) {
-                    card.classList.add('playing-now');
-                } else {
-                    card.classList.remove('playing-now');
-                }
-            });
-        }
-
-        togglePlay() {
-            if (this.currentTrackIndex === -1) {
-                // Если трек не выбран, пробуем воспроизвести первый
-                if (this.playlist.length > 0) {
-                    document.querySelector('.music-mini-card')?.click();
-                }
-                return;
-            }
-            
-            if (this.isPlaying) {
-                this.audio.pause();
-            } else {
-                this.audio.play().catch(err => {
-                    console.error('Ошибка воспроизведения:', err);
-                });
-            }
-        }
-
-        onPlay() {
-            this.isPlaying = true;
-            this.playPauseBtn.textContent = '⏸';
-            this.updateCardsState();
-        }
-
-        onPause() {
-            this.isPlaying = false;
-            this.playPauseBtn.textContent = '▶';
-            this.updateCardsState();
-        }
-
-        nextTrack() {
-            if (this.playlist.length === 0) return;
-            
-            const nextIndex = (this.currentTrackIndex + 1) % this.playlist.length;
-            this.loadAndPlayTrack(nextIndex);
-            this.scrollToActiveCard();
-        }
-
-        prevTrack() {
-            if (this.playlist.length === 0) return;
-            
-            const prevIndex = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
-            this.loadAndPlayTrack(prevIndex);
-            this.scrollToActiveCard();
-        }
-
-        scrollToActiveCard() {
-            const activeCard = document.querySelector('.music-mini-card.playing-now');
-            if (activeCard) {
-                activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-
-        updateProgress() {
-            if (!this.isDragging && this.audio.duration) {
-                const progress = (this.audio.currentTime / this.audio.duration) * 100;
-                this.progressSlider.value = progress;
-            }
-        }
-
-        onMetadataLoaded() {
-            this.progressSlider.max = 100;
-        }
-
-        onProgressInput() {
-            this.isDragging = true;
-        }
-
-        onProgressChange() {
-            this.isDragging = false;
-            const progress = this.progressSlider.value;
-            const time = (progress / 100) * this.audio.duration;
-            this.audio.currentTime = time;
-        }
-
-        onAudioError(e) {
-            console.error('Ошибка загрузки аудио:', e);
-            this.onPause();
-            alert('Не удалось загрузить аудиофайл');
-        }
-
-        toggleMute() {
-            if (this.currentVolume > 0) {
-                this.lastVolume = this.currentVolume;
-                this.currentVolume = 0;
-                this.volumeBtn.querySelector('.material-symbols-outlined').textContent = 'volume_off';
-            } else {
-                this.currentVolume = this.lastVolume || 1;
-                this.volumeBtn.querySelector('.material-symbols-outlined').textContent = 
-                    this.currentVolume > 0.5 ? 'volume_up' : 'volume_down';
-            }
-            this.audio.volume = this.currentVolume;
-        }
-
-        changeVolume(delta) {
-            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume + delta));
-            this.audio.volume = this.currentVolume;
-            
-            const volumeIcon = this.volumeBtn.querySelector('.material-symbols-outlined');
-            if (this.currentVolume === 0) {
-                volumeIcon.textContent = 'volume_off';
-            } else if (this.currentVolume < 0.5) {
-                volumeIcon.textContent = 'volume_down';
-            } else {
-                volumeIcon.textContent = 'volume_up';
-            }
-        }
-
-        handleKeyboard(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            
-            switch(e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    this.togglePlay();
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    if (e.ctrlKey) {
-                        this.prevTrack();
-                    } else {
-                        this.seekTime(-5);
-                    }
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    if (e.ctrlKey) {
-                        this.nextTrack();
-                    } else {
-                        this.seekTime(5);
-                    }
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.changeVolume(0.1);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.changeVolume(-0.1);
-                    break;
-                case 'KeyM':
-                    this.toggleMute();
-                    break;
-            }
-        }
-
-        seekTime(seconds) {
-            if (this.audio.duration) {
-                this.audio.currentTime = Math.max(0, Math.min(
-                    this.audio.duration, 
-                    this.audio.currentTime + seconds
-                ));
-            }
+        getcurrenttime: function (element)
+        {
+            return element.currentTime;
         }
     }
-
-    function openTrackView(card) {
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        window.mediaPlayer = new MediaPlayer();
-    });
 </script>
+
+@code{
+    string playPauseLabel = "▶";
+    bool isPlaying = false;
+
+    double trackLength = 0;
+    double currentTimeStamp = 0;
+    double calculatedRewind;
+
+    public TrackModel track;
+    private ElementReference audioElement;
+
+    Timer timer = new Timer(1000);
+
+    protected override void OnInitialized()
+    {
+        SSTS.onIDChanged += OnPlayerIdChanged;
+        track = SSTS.track;
+
+        timer.Elapsed += TimerGetCurrentTimeStamp;
+    }
+
+    //Изменение ID трека
+    private void OnPlayerIdChanged(TrackModel newTrack)
+    {
+        track = newTrack;
+        Console.WriteLine($"track ID - {track.ID}");
+
+        StartOver();
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    //Изменение состояния проигрывания
+    public async Task PlayingStates()
+    {
+        isPlaying = !isPlaying;
+
+        CheckState();
+    }
+
+    //Старт с начала
+    public async Task StartOver()
+    {
+        isPlaying = true;
+
+        await JS.InvokeVoidAsync("audioPlayer.startover", audioElement, 0);
+
+        //
+        //  todo - отслеживание загрузки аудио
+        //
+        await Task.Delay(100);
+
+        trackLength = await JS.InvokeAsync<double>("audioPlayer.getlength", audioElement);
+        Console.WriteLine(trackLength);
+
+        CheckState();
+    }
+
+    //Перемотка
+    public async Task Rewind(ChangeEventArgs e)
+    {
+        currentTimeStamp = Convert.ToInt32(e.Value);
+
+        calculatedRewind = (currentTimeStamp / 1000) * trackLength;
+
+        await JS.InvokeVoidAsync("audioPlayer.startover", audioElement, calculatedRewind);
+
+        Console.WriteLine(currentTimeStamp);
+    }
+
+    public async Task CheckState()
+    {
+        switch (isPlaying)
+        {
+            case true:
+                playPauseLabel = "⏸";
+
+                timer.Start();
+
+                await JS.InvokeVoidAsync("audioPlayer.play", audioElement);
+                InvokeAsync(StateHasChanged);
+
+                break;
+            case false:
+                playPauseLabel = "▶";
+
+                timer.Stop();
+
+                await JS.InvokeVoidAsync("audioPlayer.pause", audioElement);
+                InvokeAsync(StateHasChanged);
+
+                break;
+        }
+    }
+
+    public async void TimerGetCurrentTimeStamp(Object source, System.Timers.ElapsedEventArgs e)
+    {
+        double rawSeconds = await JS.InvokeAsync<double>("audioPlayer.getcurrenttime", audioElement);
+
+        if (trackLength > 0)
+        {
+            currentTimeStamp = (rawSeconds / trackLength) * 1000.0;
+        }
+        else
+        {
+            currentTimeStamp = 0;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

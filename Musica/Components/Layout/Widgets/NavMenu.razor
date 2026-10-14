@@ -1,22 +1,26 @@
+@inject NavigationManager Navigation
+
 <aside class="sidebar">
     <div class="sidebar-menu-container">
-        <a href="home" class="section-button" data-page="home" onclick="handleAction('home')">
+
+        <NavLink class="section-button" href="home">
             <span class="material-symbols-outlined">home</span>
             Home
-        </a>
-        <a href="playlists" class="section-button" data-page="playlists" onclick="handleAction('playlists')">
+        </NavLink>
+
+        <NavLink class="section-button" href="playlists">
             <span class="material-symbols-outlined">playlist_play</span>
             My playlists
-        </a>
-        @* <a href="explore" class="section-button" data-page="explore" onclick="handleAction('explore')">
+        </NavLink>
+
+        <NavLink class="section-button" href="explore">
             <span class="material-symbols-outlined">explore</span>
             Explore
-        </a> *@
-        <a href="yt" class="section-button" data-page="yt" onclick="handleAction('yt')">
+        </NavLink>
+
+        <NavLink class="section-button" href="yt">
             <span class="material-symbols-outlined">explore</span>
             YouTube to audio
-        </a>
+        </NavLink>
     </div>
 </aside>
-
-<script src="NavMenu.js"></script>

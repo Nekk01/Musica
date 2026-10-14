@@ -8,6 +8,7 @@ namespace Musica;
 
 public interface IPlaylistService
 {
+    Task<List<TrackModel>>GetAllTracksFromPlaylist(int playlistID);
     Task<List<PlaylistModel>>GetAllRecords(int user_id);
     Task<bool> CreatePlaylist(string name, int owner_id);
     Task<bool> RemovePlaylist(int id);

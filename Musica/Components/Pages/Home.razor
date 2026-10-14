@@ -1,5 +1,8 @@
 ﻿@page "/Home"
+@rendermode InteractiveServer
 @inject ITrackService TrackService
+@inject IPlaylistService PlaylistService
+@inject SyncSelectedTrackService SSTS
 
 <PageTitle>Home</PageTitle>
 
@@ -7,12 +10,7 @@
     <h2>New Releases</h2>
     <div class="mini-card-container">
         @foreach(var item in items){
-            <div class="music-mini-card" 
-                 data-file-url="@item.file_url"
-                 data-title="@item.title"
-                 data-artist="@item.artist_name"
-                 data-cover="@item.cover_url"
-                 onclick="openTrackView(this)">
+            <div class="music-mini-card" data-file-url="@item.file_url" data-title="@item.title" data-artist="@item.artist_name" data-cover="@item.cover_url" @onclick="() => ChangeID(item)">
                 <img src="@item.cover_url" alt="@item.title" class="album-thumb-max">
                 <div class="text-meta">
                     <span class="track-title">@item.title</span>
@@ -23,26 +21,23 @@
     </div>
 </section>
 
-@* <section class="content-section">
-    <h2>Recommended for you</h2>
-    <div class="mini-card-container">
-        @for(int a = 0; a <=3; a++){
-            <div class="music-mini-card" onclick="openTrackView(this)">
-                <img src="Images/card.jpg" alt="Crawling" class="album-thumb-max">
-                <div class="text-meta">
-                    <span class="track-title">Crawling</span>
-                    <span class="artist-name">White Bat</span>
-                </div>
-            </div>
-        }
-    </div>
-</section> *@
-
-@code{
+@code {
     public List<TrackModel> items = new();
 
     protected override async Task OnInitializedAsync()
     {
-        items = await TrackService.GetAllRecords();
+        try
+        {
+            items = await TrackService.GetAllRecords();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tracks: {ex.Message}");
+        }
+    }
+
+    public void ChangeID(TrackModel track)
+    {
+        SSTS.ChangeID(track);
     }
 }

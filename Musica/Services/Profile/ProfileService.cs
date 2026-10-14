@@ -18,6 +18,7 @@ public class ProfileService : IProfileService
             return new SqlConnection(_configuration.GetConnectionString("SQLConnection"));
         }
     }
+
     public async Task<UserModel> FindByID(int id)
     {
         using (IDbConnection connection = Connection)
