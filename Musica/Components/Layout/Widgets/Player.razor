@@ -1,25 +1,33 @@
 @using System.Collections
-@using System.Timers
 @rendermode InteractiveServer
 @inject SyncSelectedTrackService SSTS
 @inject IJSRuntime JS
-
+@implements IAsyncDisposable
 
 <footer class="media-player">
 
     <div class="progress-container">
-        <input type="range" class="progress-slider" id="progress-slider" @onchange="Rewind" min="0" max="1000" value="@currentTimeStamp">
+        <input type="range" 
+               class="progress-slider" 
+               id="progress-slider" 
+               min="0" 
+               max="1000" 
+               value="@sliderValue"
+               @onchange="OnSliderChange" 
+               disabled="@(track == null)" />
     </div>
+
+    <audio @ref="audioElement" id="audioElement" preload="metadata"></audio>
 
     <div class="controls-row">
         @if (track != null)
         {
-            <p>@currentTimeStamp</p>
-            <p>@trackLength</p>
-            <p>@calculatedRewind</p>
-            <audio @ref="audioElement" id="audioElement" preload="auto" src="@track.file_url"></audio>
+            <div style="font-size: 12px; color: gray;">
+                <span>@FormatTime(currentSeconds) / @FormatTime(trackLength)</span>
+            </div>
+
             <div class="track-info">
-                <img src="@track.cover_url" alt="Album Art" class="album-thumb" id="album-art">
+                <img src="@track.cover_url" alt="Album Art" class="album-thumb" id="album-art" />
                 <div class="text-meta">
                     <span class="track-title" id="track-title">@track.title</span>
                     <span class="artist-name" id="artist-name">@track.artist_name</span>
@@ -29,17 +37,19 @@
         else
         {
             <div class="track-info">
-                <img src="/Images/default-cover.png" alt="Album Art" class="album-thumb" id="album-art">
+                <img src="/Images/default-cover.png" alt="Album Art" class="album-thumb" id="album-art" />
                 <div class="text-meta">
-                    <span class="track-title" id="track-title">title</span>
-                    <span class="artist-name" id="artist-name">artist_name</span>
+                    <span class="track-title" id="track-title">Выберите трек</span>
+                    <span class="artist-name" id="artist-name">—</span>
                 </div>
             </div>
         }
 
         <div class="playback-controls">
             <button class="icon-btn" id="prev-btn">⏮</button>
-            <button class="play-pause-btn" id="play-pause-btn" @onclick="PlayingStates">@playPauseLabel</button>
+            <button class="play-pause-btn" id="play-pause-btn" @onclick="TogglePlayPause" disabled="@(track == null)">
+                @(isPlaying ? "⏸" : "▶")
+            </button>
             <button class="icon-btn" id="next-btn">⏭</button>
         </div>
 
@@ -60,145 +70,232 @@
     </div>
 </footer>
 
-<script>
-    window.audioPlayer = 
-    {
-        play: function (element)
-        {
-            element.play();
-        },
-
-        pause: function (element)
-        {
-            element.pause();
-        },
-
-        startover: function (element, time)
-        {
-            element.currentTime = time ;
-        },
-
-        getlength: function (element)
-        {
-            console.log(element.duration)
-            return element.duration;
-        },
-
-        getcurrenttime: function (element)
-        {
-            return element.currentTime;
-        }
-    }
-</script>
-
-@code{
-    string playPauseLabel = "▶";
-    bool isPlaying = false;
-
-    double trackLength = 0;
-    double currentTimeStamp = 0;
-    double calculatedRewind;
-
-    public TrackModel track;
+@code {
     private ElementReference audioElement;
+    private DotNetObjectReference<Player>? dotNetRef;
 
-    Timer timer = new Timer(1000);
+    public TrackModel? track;
+    private bool isPlaying = false;
+    private bool isJsInitialized = false;
+    private string? pendingTrackUrl = null;
+
+    private double trackLength = 0;
+    private double currentSeconds = 0;
+    private int sliderValue = 0;
 
     protected override void OnInitialized()
     {
-        SSTS.onIDChanged += OnPlayerIdChanged;
-        track = SSTS.track;
-
-        timer.Elapsed += TimerGetCurrentTimeStamp;
-    }
-
-    //Изменение ID трека
-    private void OnPlayerIdChanged(TrackModel newTrack)
-    {
-        track = newTrack;
-        Console.WriteLine($"track ID - {track.ID}");
-
-        StartOver();
-
-        InvokeAsync(StateHasChanged);
-    }
-
-    //Изменение состояния проигрывания
-    public async Task PlayingStates()
-    {
-        isPlaying = !isPlaying;
-
-        CheckState();
-    }
-
-    //Старт с начала
-    public async Task StartOver()
-    {
-        isPlaying = true;
-
-        await JS.InvokeVoidAsync("audioPlayer.startover", audioElement, 0);
-
-        //
-        //  todo - отслеживание загрузки аудио
-        //
-        await Task.Delay(100);
-
-        trackLength = await JS.InvokeAsync<double>("audioPlayer.getlength", audioElement);
-        Console.WriteLine(trackLength);
-
-        CheckState();
-    }
-
-    //Перемотка
-    public async Task Rewind(ChangeEventArgs e)
-    {
-        currentTimeStamp = Convert.ToInt32(e.Value);
-
-        calculatedRewind = (currentTimeStamp / 1000) * trackLength;
-
-        await JS.InvokeVoidAsync("audioPlayer.startover", audioElement, calculatedRewind);
-
-        Console.WriteLine(currentTimeStamp);
-    }
-
-    public async Task CheckState()
-    {
-        switch (isPlaying)
+        SSTS.onIDChanged += OnTrackSelected;
+        if (SSTS.track != null)
         {
-            case true:
-                playPauseLabel = "⏸";
-
-                timer.Start();
-
-                await JS.InvokeVoidAsync("audioPlayer.play", audioElement);
-                InvokeAsync(StateHasChanged);
-
-                break;
-            case false:
-                playPauseLabel = "▶";
-
-                timer.Stop();
-
-                await JS.InvokeVoidAsync("audioPlayer.pause", audioElement);
-                InvokeAsync(StateHasChanged);
-
-                break;
+            track = SSTS.track;
+            pendingTrackUrl = track.file_url;
         }
     }
 
-    public async void TimerGetCurrentTimeStamp(Object source, System.Timers.ElapsedEventArgs e)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        double rawSeconds = await JS.InvokeAsync<double>("audioPlayer.getcurrenttime", audioElement);
-
-        if (trackLength > 0)
+        if (firstRender)
         {
-            currentTimeStamp = (rawSeconds / trackLength) * 1000.0;
+            dotNetRef = DotNetObjectReference.Create(this);
+
+            await InitializeJsPlayerAsync();
+            isJsInitialized = true;
+
+            if (!string.IsNullOrEmpty(pendingTrackUrl))
+            {
+                var url = pendingTrackUrl;
+                pendingTrackUrl = null;
+                await LoadAndPlayTrackAsync(url);
+            }
+        }
+    }
+
+    private async Task InitializeJsPlayerAsync()
+    {
+        string jsCode = @"
+            window.blazorAudio = {
+                init: function(audioEl, dotnetHelper) {
+                    if (!audioEl) return;
+                    audioEl._dotnet = dotnetHelper;
+
+                    const sendDuration = () => {
+                        console.log('Raw audioEl.duration:', audioEl.duration);
+                        if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) {
+                            dotnetHelper.invokeMethodAsync('OnDurationChanged', audioEl.duration);
+                        }
+                    };
+
+                    audioEl.onloadedmetadata = sendDuration;
+                    audioEl.ondurationchange = sendDuration;
+
+                    audioEl.ontimeupdate = () => {
+                        const dur = Number.isFinite(audioEl.duration) ? audioEl.duration : 0;
+                        dotnetHelper.invokeMethodAsync('OnTimeUpdate', audioEl.currentTime, dur);
+                    };
+
+                    audioEl.onended = () => {
+                        dotnetHelper.invokeMethodAsync('OnTrackEnded');
+                    };
+                },
+                loadAndPlay: async function(audioEl, url) {
+                    if (!audioEl) return false;
+                    audioEl.pause();
+                    audioEl.src = url;
+                    audioEl.load();
+
+                    this.fetchExactDuration(url, audioEl._dotnet);
+
+                    try {
+                        await audioEl.play();
+                        return true;
+                    } catch (err) {
+                        console.warn('Ошибка запуска:', err);
+                        return false;
+                    }
+                },
+                fetchExactDuration: async function(url, dotnetHelper) {
+                    try {
+                        const response = await fetch(url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                        
+                        console.log('Длительность', audioBuffer.duration);
+                        if (dotnetHelper && audioBuffer.duration > 0) {
+                            dotnetHelper.invokeMethodAsync('OnDurationChanged', audioBuffer.duration);
+                        }
+                        audioCtx.close();
+                    } catch (e) {
+                        console.error('Не удалось декодировать длительность', e);
+                    }
+                },
+                play: async function(audioEl) {
+                    if (!audioEl) return false;
+                    try {
+                        await audioEl.play();
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                pause: function(audioEl) {
+                    if (audioEl) audioEl.pause();
+                },
+                seek: function(audioEl, timeSeconds) {
+                    if (audioEl && Number.isFinite(timeSeconds)) {
+                        audioEl.currentTime = timeSeconds;
+                    }
+                }
+            };
+        ";
+
+        await JS.InvokeVoidAsync("eval", jsCode);
+        await JS.InvokeVoidAsync("blazorAudio.init", audioElement, dotNetRef);
+    }
+
+    private async void OnTrackSelected(TrackModel newTrack)
+    {
+        await InvokeAsync(async () =>
+        {
+            track = newTrack;
+            trackLength = 0;
+            currentSeconds = 0;
+            sliderValue = 0;
+            StateHasChanged();
+
+            if (isJsInitialized && track != null)
+            {
+                await LoadAndPlayTrackAsync(track.file_url);
+            }
+            else if (track != null)
+            {
+                pendingTrackUrl = track.file_url;
+            }
+        });
+    }
+
+    private async Task LoadAndPlayTrackAsync(string url)
+    {
+        isPlaying = await JS.InvokeAsync<bool>("blazorAudio.loadAndPlay", audioElement, url);
+        StateHasChanged();
+    }
+
+    private async Task TogglePlayPause()
+    {
+        if (track == null) return;
+
+        if (isPlaying)
+        {
+            await JS.InvokeVoidAsync("blazorAudio.pause", audioElement);
+            isPlaying = false;
         }
         else
         {
-            currentTimeStamp = 0;
+            isPlaying = await JS.InvokeAsync<bool>("blazorAudio.play", audioElement);
+        }
+    }
+
+    private async Task OnSliderChange(ChangeEventArgs e)
+    {
+        if (trackLength <= 0) return;
+
+        if (int.TryParse(e.Value?.ToString(), out int newSliderPos))
+        {
+            sliderValue = newSliderPos;
+            double targetSeconds = (sliderValue / 1000.0) * trackLength;
+            currentSeconds = targetSeconds;
+
+            await JS.InvokeVoidAsync("blazorAudio.seek", audioElement, targetSeconds);
+        }
+    }
+
+    [JSInvokable]
+    public void OnDurationChanged(double duration)
+    {
+        trackLength = duration;
+        Console.WriteLine($"Получена длительность трека: {trackLength} сек.");
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnTimeUpdate(double currentTime, double duration)
+    {
+        currentSeconds = currentTime;
+        
+        if (duration > 0 && trackLength == 0)
+        {
+            trackLength = duration;
         }
 
-        await InvokeAsync(StateHasChanged);
+        if (trackLength > 0)
+        {
+            sliderValue = (int)((currentSeconds / trackLength) * 1000.0);
+        }
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnTrackEnded()
+    {
+        isPlaying = false;
+        sliderValue = 0;
+        currentSeconds = 0;
+        StateHasChanged();
+    }
+
+    private string FormatTime(double totalSeconds)
+    {
+        if (totalSeconds <= 0 || double.IsNaN(totalSeconds)) return "00:00";
+        var ts = TimeSpan.FromSeconds(totalSeconds);
+        return ts.ToString(@"mm\:ss");
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        SSTS.onIDChanged -= OnTrackSelected;
+        dotNetRef?.Dispose();
+        return ValueTask.CompletedTask;
     }
 }
