@@ -17,19 +17,13 @@
 
 .profile-menu-container {
   z-index: 100;
-  /* display: none; */
   position: fixed;
   width: 250px;
-  border-radius: 20px;
-  padding: 20px 0;
-  flex-direction: column;
   right: 25px;
   top: 100px;
-  gap: 10px;
-  align-items: center;
   background: rgba(255,255,255,0.02);
-  border-radius: 20px;
   backdrop-filter: blur(5px);
+  justify-content: center;
 }
 
 .profile-menu-container.show {

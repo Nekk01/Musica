@@ -1,7 +1,9 @@
 :root {
-  --accent-color: #d4a03a;
-  --text-main: #ffffff;
-  --text-dim: #b3b3b3;
+    --card-icon-bg: rgb(255 255 255 / 0.04);
+    --card-icon-bg-border: rgb(255 255 255 / 0.08);
+    --accent-color: #d4a03a;
+    --text-main: #ffffff;
+    --text-dim: #b3b3b3;
 }
 
 body {
@@ -14,7 +16,8 @@ body {
   min-height: 100vh;
 }
 
-.section-button {
+.section-button,
+.search-button {
   background: transparent;
   border: none;
   color: var(--text-main);
@@ -28,7 +31,6 @@ body {
   gap: 10px;
   display: flex;
   align-items: center;
-  color: var(--text-main);
   text-decoration: none;
 }
 
@@ -87,6 +89,54 @@ input{
   border-radius: 10px;
   outline: none;
   padding: 8px 15px;
+}
+
+.form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px 14px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    color: var(--text-main);
+    font-size: 15px;
+    outline: none;
+    letter-spacing: 0.3px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    margin-right: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.surface-card,
+.feature-card,
+.section-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    backdrop-filter: blur(5px);
+}
+
+.sidebar-menu-container,
+.profile-menu-container {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding: 20px 0;
+    border-radius: 20px;
 }
 
 h2 {

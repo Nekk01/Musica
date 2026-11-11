@@ -1,0 +1,290 @@
+@page "/upload2"
+@rendermode InteractiveServer
+@inject ITrackService TrackService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Загрузка трека</PageTitle>
+
+<section class="content-section">
+    <h2>Загрузка трека</h2>
+    <p class="page-subtitle">Добавьте аудиофайл, метаданные и обложку для публикации в сервисе</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="status-alert alert-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>@errorMessage</span>
+        </div>
+    }
+
+    @if (uploadSuccess)
+    {
+        <div class="status-alert alert-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span>Трек успешно опубликован! Перенаправление...</span>
+        </div>
+    }
+
+    <EditForm Model="track" OnValidSubmit="HandleSubmit" FormName="UploadTrack">
+        <DataAnnotationsValidator/>
+
+        <div class="upload-grid">
+            <div class="upload-column">
+                <div class="surface-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"/>
+                                <circle cx="6" cy="18" r="3"/>
+                                <circle cx="18" cy="16" r="3"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="card-title">Аудиофайл</h3>
+                            <p class="card-subtitle">MP3, WAV или FLAC (до 100 МБ)</p>
+                        </div>
+                    </div>
+
+                    <label class="dropzone @(selectedAudioFile != null ? "dropzone--active" : "")">
+                        <InputFile OnChange="HandleAudioSelected" accept="audio/mp3, audio/wav, audio/flac" class="sr-only"/>
+                        <div class="dropzone-body">
+                            <div class="dropzone-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                            </div>
+                            <span class="dropzone-action">
+                                @(selectedAudioFile != null ? "Заменить аудиофайл" : "Выберите или перетащите аудиофайл")
+                            </span>
+                            <span class="dropzone-hint">WAV, FLAC, MP3 320 kbps</span>
+                        </div>
+                    </label>
+
+                    @if (selectedAudioFile != null)
+                    {
+                        <div class="file-item">
+                            <div class="file-icon">🎵</div>
+                            <div class="file-info">
+                                <span class="file-name">@selectedAudioFile.Name</span>
+                                <span class="file-size">@((selectedAudioFile.Size / 1024.0 / 1024.0).ToString("F2")) MB</span>
+                            </div>
+                            <span class="badge-ready">Готов к загрузке</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="surface-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="card-title">Обложка релиза</h3>
+                            <p class="card-subtitle">JPG, PNG или WebP (квадрат от 1000×1000)</p>
+                        </div>
+                    </div>
+
+                    <div class="cover-uploader">
+                        <div class="cover-preview-box">
+                            @if (!string.IsNullOrEmpty(coverPreviewUrl))
+                            {
+                                <img src="@coverPreviewUrl" alt="Превью обложки" class="cover-img"/>
+                            }
+                            else
+                            {
+                                <div class="cover-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <polyline points="21 15 16 10 5 21"/>
+                                    </svg>
+                                    <span>Нет обложки</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="cover-controls">
+                            <label class="dropzone" style="text-align: center; display: inline-block;">
+                                <span>@(selectedCoverFile != null ? "Сменить обложку" : "Выбрать файл")</span>
+                                <InputFile OnChange="HandleCoverSelected" accept="image/png, image/jpeg, image/webp" class="sr-only"/>
+                            </label>
+                            @if (selectedCoverFile != null)
+                            {
+                                <div class="file-name-meta">@selectedCoverFile.Name</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-column">
+                <div class="surface-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="card-title">Информация о треке</h3>
+                            <p class="card-subtitle">Основные метаданные композиции</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="field-label" for="trackTitle">Название трека <span class="required">*</span></label>
+                        <InputText id="trackTitle" @bind-Value="track.title" placeholder="например, Midnight City" class="form-input"/>
+                        <ValidationMessage For="@(() => track.title)" class="field-validation"/>
+                    </div>
+
+                    @if (isUploading)
+                    {
+                        <div class="upload-progress-box">
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar-fill indeterminate"></div>
+                            </div>
+                            <span class="progress-label">Отправка трека на сервер... Пожалуйста, подождите</span>
+                        </div>
+                    }
+
+                    <div class="actions-group">
+                        <button type="submit" class="button" disabled="@isUploading">
+                            @if (isUploading)
+                            {
+                                <span class="spinner"></span>
+                                <span>Публикация...</span>
+                            }
+                            else
+                            {
+                                <span>Опубликовать трек</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private TrackModel track = new TrackModel();
+    private IBrowserFile selectedAudioFile;
+    private IBrowserFile selectedCoverFile;
+    private string coverPreviewUrl;
+    private string errorMessage;
+
+    private bool isUploading = false;
+    private bool uploadSuccess = false;
+
+    private void HandleAudioSelected(InputFileChangeEventArgs e)
+    {
+        errorMessage = null;
+        selectedAudioFile = e.File;
+    }
+
+    private async Task HandleCoverSelected(InputFileChangeEventArgs e)
+    {
+        selectedCoverFile = e.File;
+        errorMessage = null;
+
+        if (selectedCoverFile != null)
+        {
+            try
+            {
+                var buffer = new byte[selectedCoverFile.Size];
+                await selectedCoverFile.OpenReadStream(5 * 1024 * 1024).ReadAsync(buffer);
+                coverPreviewUrl = $"data:{selectedCoverFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка превью обложки: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = null;
+
+        if (selectedAudioFile == null)
+        {
+            errorMessage = "Пожалуйста, выберите аудиофайл для загрузки.";
+            return;
+        }
+
+        isUploading = true;
+        uploadSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            bool result = await TrackService.UploadRecord(track, selectedAudioFile, selectedCoverFile, userId);
+
+            if (result)
+            {
+                uploadSuccess = true;
+                track = new TrackModel();
+                selectedAudioFile = null;
+                selectedCoverFile = null;
+                coverPreviewUrl = null;
+                
+                await Task.Delay(1000);
+                NavigationManager.NavigateTo("/Home");
+            }
+            else
+            {
+                errorMessage = "Не удалось загрузить трек. Попробуйте еще раз.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка загрузки: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var claimId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (int.TryParse(claimId, out int userId))
+        {
+            int artistProfileID = await TrackService.FindArtistByUserID(userId);
+            if (artistProfileID < 1)
+            {
+                NavigationManager.NavigateTo("/register/artist");
+            }
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/register/artist");
+        }
+    }
+}

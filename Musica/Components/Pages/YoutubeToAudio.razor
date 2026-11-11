@@ -1,0 +1,99 @@
+@page "/yt"
+@page "/youtube-to-audio"
+
+<PageTitle>YouTube to Audio</PageTitle>
+
+<section class="content-section">
+    <h2>YT To Audio</h2>
+    <p class="yt-subtitle">
+        Перенесите свои треки из YouTube в Musica
+    </p>
+
+    <section class="surface-card yt-converter" aria-labelledby="yt-converter-title">
+        <div class="yt-card-head">
+            <div class="yt-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+            </div>
+            <div>
+                <h2 id="yt-converter-title">Ссылка на видео</h2>
+                <p class="yt-card-subtitle">Один ролик за раз, длительностью до 2 часов</p>
+            </div>
+        </div>
+
+        <label class="yt-field-label" for="yt-url">Ссылка на YouTube</label>
+
+        <div class="yt-url-row">
+            <div class="yt-url-field">
+                <svg class="yt-url-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input id="yt-url"
+                       type="url"
+                       name="yt-url"
+                       class="form-input yt-url-input"
+                       placeholder="https://www.youtube.com/watch?v=..."
+                       autocomplete="off"
+                       spellcheck="false"/>
+            </div>
+
+            <button type="button" class="button yt-convert-btn">
+                Конвертировать
+            </button>
+        </div>
+
+        <div class="yt-options">
+            <div class="yt-option-group">
+                <label class="yt-field-label" for="yt-quality">Качество</label>
+                <div class="yt-select-wrap">
+                    <select id="yt-quality" name="yt-quality" class="yt-select">
+                        <option value="320">320 kbps</option>
+                        <option value="256">256 kbps</option>
+                        <option value="192">192 kbps</option>
+                        <option value="128">128 kbps</option>
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="yt-note">
+            <span>Скачивайте только тот контент, на который у вас есть права. Уважайте авторов и правила платформы.</span>
+        </div>
+    </section>
+
+    <section class="surface-card yt-steps" aria-labelledby="yt-steps-title">
+        <h2 id="yt-steps-title">Как это работает</h2>
+
+        <ol class="yt-step-list">
+            <li class="yt-step">
+                <span class="yt-step-num">1</span>
+                <div class="yt-step-text">
+                    <h3>Скопируйте ссылку</h3>
+                    <p>Откройте видео на YouTube и скопируйте адрес из строки браузера или меню «Поделиться».</p>
+                </div>
+            </li>
+
+            <li class="yt-step">
+                <span class="yt-step-num">2</span>
+                <div class="yt-step-text">
+                    <h3>Вставьте и настройте</h3>
+                    <p>Вставьте ссылку в поле выше, выберите формат и качество будущего аудиофайла.</p>
+                </div>
+            </li>
+
+            <li class="yt-step">
+                <span class="yt-step-num">3</span>
+                <div class="yt-step-text">
+                    <h3>Скачайте аудио</h3>
+                    <p>Нажмите «Конвертировать» и сохраните готовый файл на устройство.</p>
+                </div>
+            </li>
+        </ol>
+    </section>
+</section>

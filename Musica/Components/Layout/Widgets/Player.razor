@@ -39,8 +39,8 @@
             <div class="track-info">
                 <img src="/Images/default-cover.png" alt="Album Art" class="album-thumb" id="album-art" />
                 <div class="text-meta">
-                    <span class="track-title" id="track-title">Выберите трек</span>
-                    <span class="artist-name" id="artist-name">—</span>
+                    <span class="track-title" id="track-title">-</span>
+                    <span class="artist-name" id="artist-name">-</span>
                 </div>
             </div>
         }
@@ -262,7 +262,7 @@
     public void OnTimeUpdate(double currentTime, double duration)
     {
         currentSeconds = currentTime;
-        
+
         if (duration > 0 && trackLength == 0)
         {
             trackLength = duration;

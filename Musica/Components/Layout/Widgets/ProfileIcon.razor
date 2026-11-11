@@ -18,8 +18,10 @@
             
             <button class="section-button" @onclick="@(() => HandleAction("publish"))">Publish track</button>
             
+            <button class="section-button" @onclick="@(() => HandleAction("publish2"))">Publish track NEW</button>
+            
             <button class="section-button" @onclick="@(() => HandleAction("edit"))">Edit profile</button>
-
+            
             <form action="/logout" method="post" style="display:inline;">
                 <AntiforgeryToken />
                 <button type="submit" class="section-button">Logout</button>
@@ -58,6 +60,10 @@ else
         else if (action == "publish")
         {
             Navigation.NavigateTo("/upload");
+        }
+        else if (action == "publish2")
+        {
+            Navigation.NavigateTo("/upload2");
         }
         else if (action == "edit")
         {

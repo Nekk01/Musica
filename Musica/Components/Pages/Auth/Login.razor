@@ -48,7 +48,7 @@
         if (principal != null)
         {
             await HttpContext.SignInAsync("Cookie", principal);
-            NavigationManager.NavigateTo("/");
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
     }
 }
